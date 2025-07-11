@@ -1,9 +1,28 @@
+
 <!DOCTYPE html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
     <title>ToDoリスト v2</title>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <!--link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" /-->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+<style>
+  md-icon {
+    font-family: 'Material Symbols Outlined';
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .check-button {
+    --md-fab-container-color: #BEEFBB; /* 背景（薄い緑） */
+    --md-fab-icon-color: #1AA64A; /* アイコン（濃い緑） */
+    --md-fab-icon-size: 30px;
+  }
+  .restore-button {
+  --md-sys-color-on-surface-variant: #3271EA;
+  }
+  .delete-button {
+  --md-sys-color-on-surface-variant: #dc362e;
+  }
+</style>
     <script type="importmap">
       {
         "imports": {
@@ -11,13 +30,11 @@
         }
       }
     </script>
-
     <script type="module">
       import '@material/web/all.js';
       import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
       document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
     </script>
-
     <style>
       body {
         font-family: sans-serif;
@@ -34,7 +51,14 @@
         padding: 0.5rem 0;
         transition: opacity 1s ease;
       }
-
+      .taskArchived {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #ccc;
+        padding: 0.5rem 0;
+        transition: opacity 1s ease;
+      }
       .fade-out {
         opacity: 0;
       }
@@ -91,6 +115,30 @@
         50% { opacity: 0.4; }
         100% { opacity: 1; }
       }
+
+      #archivedToggle {
+        cursor: pointer;
+        user-select: none;
+        margin-bottom: 0.5rem;
+      }
+
+      #archivedList {
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.5s ease;
+      }
+
+      #archivedSectionWrapper {
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 1rem 1rem 1rem 1rem;
+      }
+
+      .icon-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
     </style>
   </head>
   <body>
@@ -103,10 +151,10 @@
 
     <div id="taskList"></div>
 
-    <details id="archivedSection" style="margin-top: 2rem;">
-      <summary class="md-typescale-title-medium">✅ 完了済みタスク</summary>
+    <div id="archivedSectionWrapper" style="margin-top: 2rem;">
+      <div id="archivedToggle" class="md-typescale-title-medium">✅ 完了済みタスク</div>
       <div id="archivedList"></div>
-    </details>
+    </div>
 
     <div class="splash-container"></div>
 
@@ -116,6 +164,15 @@
       const addButton = document.getElementById('addButton');
       const taskList = document.getElementById('taskList');
       const archivedList = document.getElementById('archivedList');
+      const archivedToggle = document.getElementById('archivedToggle');
+      const archivedSectionWrapper = document.getElementById('archivedSectionWrapper');
+
+      let archivedOpen = false;
+
+      archivedToggle.addEventListener('click', () => {
+        archivedOpen = !archivedOpen;
+        archivedList.style.maxHeight = archivedOpen ? archivedList.scrollHeight + 'px' : '0';
+      });
 
       function setInputEnabled(enabled) {
         addButton.disabled = !enabled;
@@ -154,6 +211,7 @@
       function showSkeletonLoader(count = 5) {
         taskList.innerHTML = '';
         archivedList.innerHTML = '';
+        archivedSectionWrapper.style.display = 'none';
         for (let i = 0; i < count; i++) {
           const skeleton = document.createElement('div');
           skeleton.className = 'skeleton';
@@ -163,13 +221,13 @@
 
       async function loadTasks() {
         showSkeletonLoader();
-
         try {
           const res = await fetch(`${scriptURL}?method=list`);
           const data = await res.json();
-
           taskList.innerHTML = '';
           archivedList.innerHTML = '';
+          archivedSectionWrapper.style.display = '';
+          archivedList.style.maxHeight = archivedOpen ? archivedList.scrollHeight + 'px' : '0';
 
           data.active.forEach(task => {
             const div = document.createElement('div');
@@ -178,8 +236,10 @@
             const span = document.createElement('span');
             span.textContent = task;
 
-            const checkBtn = document.createElement('md-icon-button');
-            checkBtn.innerHTML = '<span class="material-icons" style="color: #4caf50;">check_circle</span>';
+            const checkBtn = document.createElement('md-fab');
+            checkBtn.setAttribute('class', 'check-button');
+            checkBtn.setAttribute('aria-label', '完了');
+            checkBtn.innerHTML = '<md-icon slot="icon">check</md-icon>';
             checkBtn.addEventListener('click', (e) => {
               triggerSplash(e);
               div.classList.add('fade-out');
@@ -195,23 +255,38 @@
 
           data.archived.forEach(task => {
             const div = document.createElement('div');
-            div.className = 'task';
+            div.className = 'taskArchived';
 
             const span = document.createElement('span');
             span.textContent = task;
 
-            const deleteBtn = document.createElement('md-icon-button');
-            deleteBtn.innerHTML = '<span class="material-icons" style="color: red;">delete</span>';
+            const iconRow = document.createElement('div');
+            iconRow.className = 'icon-row';
+
+            const restoreBtn = document.createElement('md-outlined-icon-button');
+            restoreBtn.setAttribute('class', 'restore-button');
+            restoreBtn.setAttribute('aria-label', '復元');
+            restoreBtn.innerHTML = '<md-icon>undo</md-icon>';
+            restoreBtn.addEventListener('click', async () => {
+              await restoreTask(task);
+            });
+
+            const deleteBtn = document.createElement('md-outlined-icon-button');
+            deleteBtn.setAttribute('class', 'delete-button');
+            deleteBtn.setAttribute('aria-label', '削除');
+            deleteBtn.innerHTML = '<md-icon>delete</md-icon>';
             deleteBtn.addEventListener('click', (e) => {
-              triggerSplash(e);
               div.classList.add('fade-out');
               div.addEventListener('transitionend', async () => {
                 await deleteTask(task);
               }, { once: true });
             });
 
+            iconRow.appendChild(restoreBtn);
+            iconRow.appendChild(deleteBtn);
+
             div.appendChild(span);
-            div.appendChild(deleteBtn);
+            div.appendChild(iconRow);
             archivedList.appendChild(div);
           });
         } catch (err) {
@@ -241,6 +316,11 @@
 
       async function archiveTask(task) {
         await fetch(`${scriptURL}?method=archive&task=${encodeURIComponent(task)}`);
+        await loadTasks();
+      }
+
+      async function restoreTask(task) {
+        await fetch(`${scriptURL}?method=restore&task=${encodeURIComponent(task)}`);
         await loadTasks();
       }
 
