@@ -1,0 +1,9 @@
+export const assistBox = document.getElementById('assistBox');
+export const taskInput = document.getElementById('taskInput');
+export const addButton = document.getElementById('addButton');
+export const taskList = document.getElementById('taskList');
+export const archivedList = document.getElementById('archivedList');
+export const archivedToggle = document.getElementById('archivedToggle');
+export const archivedSectionWrapper = document.getElementById('archivedSectionWrapper');
+export const chips = document.querySelectorAll('md-assist-chip');
+export const scriptURL = 'https://script.google.com/macros/s/ID/exec';
