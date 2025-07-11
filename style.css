@@ -57,16 +57,13 @@ top: 100%;
       .input-row md-outlined-text-field {
         flex-grow: 1;
       }
-      .splash-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        z-index: 0;
-      }
+.splash-container {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none; /* ボタンなど操作に支障出さないため */
+  overflow: visible;
+  z-index: 9999;
+}
       .splash {
         position: absolute;
         background: limegreen;
@@ -115,3 +112,8 @@ top: 100%;
         gap: 0.5rem;
         align-items: center;
       }
+.taglabel {
+display: flex;
+align-items: center;
+font-size: 15px;
+}

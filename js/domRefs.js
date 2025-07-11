@@ -1,6 +1,8 @@
 export const assistBox = document.getElementById('assistBox');
 export const taskInput = document.getElementById('taskInput');
 export const addButton = document.getElementById('addButton');
+export const tagSelectButton = document.getElementById('tagSelectButton'); // 追加
+export const tagDialog = document.getElementById('tagDialog'); // 追加
 export const taskList = document.getElementById('taskList');
 export const archivedList = document.getElementById('archivedList');
 export const archivedToggle = document.getElementById('archivedToggle');

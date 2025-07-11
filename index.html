@@ -20,17 +20,36 @@
   </head>
   <body>
     <h1 class="md-typescale-headline-small">📝 ToDoリスト</h1>
-    <div class="input-row">
-      <md-outlined-text-field id="taskInput" label="タスクを入力"></md-outlined-text-field>
-      <md-filled-button id="addButton">追加</md-filled-button>
-      <div class="assist-box" id="assistBox">
-        <md-assist-chip>YYYYMMDD</md-assist-chip>
-        <md-assist-chip>MMDD</md-assist-chip>
-        <md-assist-chip>緊急</md-assist-chip>
-        <md-assist-chip>重要</md-assist-chip>
-        <md-assist-chip>【】</md-assist-chip>
-      </div>
-    </div>
+<!-- input-row内の変更部分 -->
+<div class="input-row">
+  <md-outlined-text-field id="taskInput" label="タスクを入力"></md-outlined-text-field>
+  <!-- タグ選択用ボタン追加 -->
+  <md-filled-button id="tagSelectButton">タグ選択</md-filled-button>
+  <md-filled-button id="addButton">追加</md-filled-button>
+  <div class="assist-box" id="assistBox">
+    <md-assist-chip>YYYYMMDD</md-assist-chip>
+    <md-assist-chip>MMDD</md-assist-chip>
+    <md-assist-chip>緊急</md-assist-chip>
+    <md-assist-chip>重要</md-assist-chip>
+    <md-assist-chip>【】</md-assist-chip>
+  </div>
+</div>
+
+<!-- タグ選択ダイアログの追加 -->
+<md-dialog id="tagDialog">
+  <div slot="headline">タグを選択</div>
+  <div slot="content" style="display: flex; flex-direction: column; gap: 0.5rem;">
+    <label class="taglabel"><md-checkbox id="tagImportant" value="重要" touch-target="wrapper"></md-checkbox>重要</label>
+    <label class="taglabel"><md-checkbox id="tagDaily" value="日常" touch-target="wrapper"></md-checkbox>日常</label>
+    <label class="taglabel"><md-checkbox id="tagUrgent" value="緊急" touch-target="wrapper"></md-checkbox>緊急</label>
+    <label class="taglabel"><md-checkbox id="tagPersonal" value="私用" touch-target="wrapper"></md-checkbox>私用</label>
+  </div>
+  <div slot="actions">
+    <md-filled-button dialogAction="close" id="closeTagDialog">閉じる</md-filled-button>
+  </div>
+</md-dialog>
+
+
     <div id="taskList"></div>
     <div id="archivedSectionWrapper" style="margin-top: 2rem;">
       <div id="archivedToggle" class="md-typescale-title-medium">✅ 完了済みタスク</div>
