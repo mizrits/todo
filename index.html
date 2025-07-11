@@ -80,6 +80,39 @@
   100% { opacity: 1; }
 }
 
+.splash-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.splash {
+  position: absolute;
+  background: #4caf50; /* 緑色 */
+  border-radius: 50%;
+  animation: splash 1000ms ease-out forwards;
+  z-index: 1000;
+}
+
+@keyframes splash {
+  0% {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5) translate(var(--dx), var(--dy));
+  }
+}
+.task.fade-out {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
     </style>
   </head>
   <body>
@@ -134,20 +167,29 @@ data.tasks.forEach(task => {
 
   const deleteBtn = document.createElement('md-icon-button');
   deleteBtn.setAttribute('aria-label', '完了');
-  deleteBtn.innerHTML = `
-  <span class="material-icons" style="color: #4caf50;">check_circle</span>
-`;;
-  //deleteBtn.style.color = '#4caf50';  // 緑色などお好みで
+  deleteBtn.setAttribute('type', 'button');
+  deleteBtn.innerHTML = `<span class="material-icons" style="color: #4caf50;">check_circle</span>`;
 
-  deleteBtn.addEventListener('click', async () => {
+  // ✅ 飛沫つき削除
+  deleteBtn.addEventListener('click', async (e) => {
+  triggerSplash(e); // 飛沫エフェクト
+
+  const taskElement = e.currentTarget.closest('.task');
+
+  // fade-outクラスを追加してアニメ開始
+  taskElement.classList.add('fade-out');
+
+  // アニメ終了後に削除APIを呼び出し
+  taskElement.addEventListener('transitionend', async () => {
     await deleteTask(task);
-  });
+  }, { once: true });  // 一回だけ実行
+});
 
   div.appendChild(span);
-  div.appendChild(deleteBtn); // ボタンは右側に配置
-
+  div.appendChild(deleteBtn);
   taskList.appendChild(div);
 });
+
 
   } catch (err) {
     console.error('Failed to load tasks:', err);
@@ -192,7 +234,7 @@ async function addTask() {
 //    setInputEnabled(true);
 //  }
 //}
-async function deleteTask(task) {
+async function deletTask(task) {
   setInputEnabled(false);
   try {
     const res = await fetch(`${scriptURL}?method=delete&task=${encodeURIComponent(task)}`);
@@ -210,6 +252,39 @@ async function deleteTask(task) {
 }
 addButton.addEventListener('click', addTask);
 window.addEventListener('DOMContentLoaded', loadTasks);
+function triggerSplash(event) {
+  const container = document.querySelector('.splash-container');
+  //const rect = event.target.getBoundingClientRect();
+    const btn = event.currentTarget; // ← ボタン本体
+  const rect = btn.getBoundingClientRect();
+const originX = rect.left + rect.width / 2 -4;
+  const originY = rect.top + rect.height / 2 -7;
+  const count = 30;
+
+  for (let i = 0; i < count; i++) {
+    const splash = document.createElement('div');
+    splash.className = 'splash';
+
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 40 + Math.random() * 60;
+    const dx = Math.cos(angle) * distance + 'px';
+    const dy = Math.sin(angle) * distance + 'px';
+
+    const size = 5 + Math.random() * 8;
+    splash.style.width = `${size}px`;
+    splash.style.height = `${size}px`;
+    splash.style.left = `${originX}px`;
+    splash.style.top = `${originY}px`;
+    splash.style.setProperty('--dx', dx);
+    splash.style.setProperty('--dy', dy);
+
+    container.appendChild(splash);
+    setTimeout(() => splash.remove(), 1000);
+  }
+}
+
 </script>
+<div class="splash-container"></div>
+
   </body>
 </html>
