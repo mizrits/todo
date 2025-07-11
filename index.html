@@ -24,7 +24,7 @@
 <div class="input-row">
   <md-outlined-text-field id="taskInput" label="タスクを入力"></md-outlined-text-field>
   <!-- タグ選択用ボタン追加 -->
-  <md-filled-button id="tagSelectButton">タグ選択</md-filled-button>
+  <md-filled-button id="tagSelectButton">その他</md-filled-button>
   <md-filled-button id="addButton">追加</md-filled-button>
   <div class="assist-box" id="assistBox">
     <md-assist-chip>YYYYMMDD</md-assist-chip>
@@ -34,16 +34,32 @@
     <md-assist-chip>【】</md-assist-chip>
   </div>
 </div>
+<div class="sort-row">
+  <md-outlined-select id="sortSelect" label="並び替え">
+    <md-select-option selected value="new">
+      <div slot="headline">新着順</div>
+    </md-select-option>
+    <md-select-option value="old">
+      <div slot="headline">古い順</div>
+    </md-select-option>
+  </md-outlined-select>
+</div>
 
 <!-- タグ選択ダイアログの追加 -->
 <md-dialog id="tagDialog">
-  <div slot="headline">タグを選択</div>
+  <div slot="headline">タグ・詳細の設定</div>
+
   <div slot="content" style="display: flex; flex-direction: column; gap: 0.5rem;">
+    <!-- タグ選択 -->
     <label class="taglabel"><md-checkbox id="tagImportant" value="重要" touch-target="wrapper"></md-checkbox>重要</label>
     <label class="taglabel"><md-checkbox id="tagDaily" value="日常" touch-target="wrapper"></md-checkbox>日常</label>
     <label class="taglabel"><md-checkbox id="tagUrgent" value="緊急" touch-target="wrapper"></md-checkbox>緊急</label>
     <label class="taglabel"><md-checkbox id="tagPersonal" value="私用" touch-target="wrapper"></md-checkbox>私用</label>
+
+    <!-- 詳細入力欄 -->
+    <md-outlined-text-field id="detailInput" label="詳細設定（任意）"></md-outlined-text-field>
   </div>
+
   <div slot="actions">
     <md-filled-button dialogAction="close" id="closeTagDialog">閉じる</md-filled-button>
   </div>

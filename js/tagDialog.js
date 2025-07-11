@@ -1,15 +1,12 @@
 import { tagDialog } from './domRefs.js';
 
-// ユーザーが選択したタグを管理するSet
 const selectedTags = new Set();
+let detailValue = ''; // 詳細入力値
 
-// タグチェックボックスを初期化してイベント設定する関数
 export function setupTagDialog() {
-  // md-dialogが定義されてから処理
   customElements.whenDefined('md-dialog').then(() => {
     const checkboxes = tagDialog.querySelectorAll('md-checkbox[name="tag"]');
     checkboxes.forEach(cb => {
-      // 初期値は空（すべて未選択）にしておく
       cb.checked = false;
       cb.addEventListener('change', () => {
         if (cb.checked) {
@@ -19,10 +16,17 @@ export function setupTagDialog() {
         }
       });
     });
+
+    const detailInput = document.getElementById('detailInput');
+    if (detailInput) {
+      detailInput.value = '';
+      detailInput.addEventListener('input', () => {
+        detailValue = detailInput.value.trim();
+      });
+    }
   });
 }
 
-// 選択中のタグ配列を取得する関数
 export function getSelectedTags() {
   const tags = [];
   if (document.getElementById('tagImportant').checked) {
@@ -41,9 +45,18 @@ export function getSelectedTags() {
 }
 
 
-// 選択タグをクリアしてダイアログのチェックもリセットする関数（必要に応じて呼ぶ）
-export function clearSelectedTags() {
+export function getDetail() {
+  return detailValue;
+}
+
+export function clearSelectedTagsAndDetail() {
   selectedTags.clear();
   const checkboxes = tagDialog.querySelectorAll('md-checkbox[name="tag"]');
   checkboxes.forEach(cb => (cb.checked = false));
+
+  const detailInput = document.getElementById('detailInput');
+  if (detailInput) {
+    detailInput.value = '';
+    detailValue = '';
+  }
 }

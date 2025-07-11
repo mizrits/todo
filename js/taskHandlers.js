@@ -1,3 +1,5 @@
+// taskHandlers.js
+
 import {
   scriptURL, taskList, archivedList,
   archivedSectionWrapper, taskInput
@@ -5,6 +7,8 @@ import {
 import { setInputEnabled, triggerSplash } from './ui.js';
 
 let archivedOpen = false;
+let allTaskData = null; // フロントキャッシュ
+
 export function setupArchiveToggle(archivedToggle) {
   archivedToggle.addEventListener('click', () => {
     archivedOpen = !archivedOpen;
@@ -26,38 +30,47 @@ export function showSkeletonLoader(count = 5) {
 export async function loadTasks() {
   showSkeletonLoader();
   try {
-    const res = await fetch(`${scriptURL}?method=list`);
-    const data = await res.json();
+    if (!allTaskData) {
+      const res = await fetch(`${scriptURL}?method=list`);
+      allTaskData = await res.json();
+    }
+
+    const sortOrder = document.getElementById('sortSelect')?.value || 'new';
+    const activeTasks = [...allTaskData.active];
+    if (sortOrder === 'old') {
+      // 古い順（そのまま）
+    } else {
+      activeTasks.reverse();
+    }
 
     taskList.innerHTML = '';
     archivedList.innerHTML = '';
     archivedSectionWrapper.style.display = '';
     archivedList.style.maxHeight = archivedOpen ? archivedList.scrollHeight + 'px' : '0';
 
-data.active.forEach(taskObj => {
+    activeTasks.forEach(taskObj => {
   const div = document.createElement('div');
-  div.className = 'task';
+  div.className = 'list-item';
 
   // タスク名
-  const span = document.createElement('span');
-  span.textContent = taskObj.task;
-  div.appendChild(span);
+  const title = document.createElement('div');
+  title.className = 'list-item-title';
+  title.textContent = taskObj.task;
 
-  // タグ（Material Chips）
-  if (taskObj.tags && taskObj.tags.length > 0) {
-    const tagContainer = document.createElement('div');
-    tagContainer.style.display = 'inline-flex';
-    tagContainer.style.gap = '6px';
-    tagContainer.style.marginLeft = '12px';
+  // タグ & 完了ボタンを横並び
+  const rightRow = document.createElement('div');
+  rightRow.style.display = 'inline-flex';
+  rightRow.style.alignItems = 'center';
+  rightRow.style.gap = '8px';
+  rightRow.style.marginLeft = '12px';
 
-    taskObj.tags.forEach(tag => {
-      const chip = document.createElement('md-assist-chip');
-      chip.setAttribute('label', tag);
-      tagContainer.appendChild(chip);
-    });
-
-    div.appendChild(tagContainer);
-  }
+  // タグ一覧
+  taskObj.tags?.forEach(tag => {
+    const chip = document.createElement('md-assist-chip');
+    chip.setAttribute('label', tag);
+    chip.classList.add('taglabel'); // ← これが必要でしたね
+    rightRow.appendChild(chip);
+  });
 
   // 完了ボタン
   const checkBtn = document.createElement('md-fab');
@@ -65,27 +78,42 @@ data.active.forEach(taskObj => {
   checkBtn.setAttribute('aria-label', '完了');
   checkBtn.innerHTML = '<md-icon slot="icon">task_alt</md-icon>';
   checkBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // ← 追加：クリックイベントのバブリングを止める
     triggerSplash(e);
     div.classList.add('fade-out');
     div.addEventListener('transitionend', async () => {
       await archiveTask(taskObj.task);
+      allTaskData = null;
+      await loadTasks();
     }, { once: true });
   });
+  rightRow.appendChild(checkBtn);
 
-  div.appendChild(checkBtn);
+  // 上部行：タイトルとタグ+ボタンを横並び
+  const topRow = document.createElement('div');
+  topRow.style.display = 'flex';
+  topRow.style.justifyContent = 'space-between';
+  topRow.style.alignItems = 'center';
+  topRow.appendChild(title);
+  topRow.appendChild(rightRow);
+  div.appendChild(topRow);
+
+  // 詳細情報（折りたたみ部分）
+  const detail = document.createElement('div');
+  detail.className = 'list-item-details';
+  detail.textContent = taskObj.detail || '';
+  div.appendChild(detail);
+
   taskList.appendChild(div);
 });
 
-    // アーカイブ済みタスク表示
-    data.archived.forEach(taskObj => {
+    allTaskData.archived.forEach(taskObj => {
       const div = document.createElement('div');
       div.className = 'taskArchived';
 
-      // タスク名
       const span = document.createElement('span');
       span.textContent = taskObj.task;
 
-      // タグ表示
       if (taskObj.tags && taskObj.tags.length > 0) {
         const tagSpan = document.createElement('span');
         tagSpan.textContent = '[' + taskObj.tags.join(', ') + ']';
@@ -94,20 +122,19 @@ data.active.forEach(taskObj => {
         div.appendChild(tagSpan);
       }
 
-      // アイコン操作欄
       const iconRow = document.createElement('div');
       iconRow.className = 'icon-row';
 
-      // 復元ボタン
       const restoreBtn = document.createElement('md-outlined-icon-button');
       restoreBtn.className = 'restore-button';
       restoreBtn.setAttribute('aria-label', '復元');
       restoreBtn.innerHTML = '<md-icon>undo</md-icon>';
       restoreBtn.addEventListener('click', async () => {
         await restoreTask(taskObj.task);
+        allTaskData = null;
+        await loadTasks();
       });
 
-      // 削除ボタン
       const deleteBtn = document.createElement('md-outlined-icon-button');
       deleteBtn.className = 'delete-button';
       deleteBtn.setAttribute('aria-label', '削除');
@@ -116,6 +143,8 @@ data.active.forEach(taskObj => {
         div.classList.add('fade-out');
         div.addEventListener('transitionend', async () => {
           await deleteTask(taskObj.task);
+          allTaskData = null;
+          await loadTasks();
         }, { once: true });
       });
 
@@ -125,22 +154,33 @@ data.active.forEach(taskObj => {
       div.appendChild(iconRow);
       archivedList.appendChild(div);
     });
+
+    document.querySelectorAll('.list-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.check-button')) return; // ← 追加：完了ボタンのときは無視
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('.list-item.open').forEach(i => i.classList.remove('open'));
+        item.classList.toggle('open', !isOpen);
+      });
+    });
+
   } catch (err) {
     taskList.innerHTML = '読み込みに失敗しました';
     console.error(err);
   }
 }
 
-export async function addTask(task, tags = []) {
+export async function addTask(task, tags = [], detail = '') {
   if (!task) return;
   setInputEnabled(false);
 
   try {
-const params = new URLSearchParams({
-  method: 'add',
-  task,
-  tags: tags.join(',')
-});
+    const params = new URLSearchParams({
+      method: 'add',
+      task,
+      tags: tags.join(','),
+      detail
+    });
 
     const res = await fetch(`${scriptURL}?${params.toString()}`);
     const json = await res.json();
@@ -149,6 +189,7 @@ const params = new URLSearchParams({
       alert('同じタスクが既に存在します');
     } else {
       document.getElementById('taskInput').value = '';
+      allTaskData = null;
       await loadTasks();
     }
   } catch (err) {
@@ -157,7 +198,6 @@ const params = new URLSearchParams({
     setInputEnabled(true);
   }
 }
-
 
 export async function archiveTask(task) {
   await fetch(`${scriptURL}?method=archive&task=${encodeURIComponent(task)}`);
