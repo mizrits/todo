@@ -1,50 +1,71 @@
 import {
+  assistBox,
+  taskInput,
   addButton,
-  archivedToggle,
-  tagDialog,
   tagSelectButton,
+  tagDialog,
+  archivedToggle,
+  sortSelect,
+  configDialog,
+  configOpenButton,
+  configSaveButton,
+  configResetButton,
+  configInput,
+  getScriptURL,
+  setScriptURL
 } from './domRefs.js';
 
 import { setupAssistBox } from './assistBox.js';
 import { setupChipInsertion } from './chipInsert.js';
+import { setupTagDialog, getSelectedTags, getDetail } from './tagDialog.js';
 import { setupArchiveToggle, addTask, loadTasks } from './taskHandlers.js';
-import {
-  setupTagDialog,
-  getSelectedTags,
-  getDetail,
-} from './tagDialog.js';
 
+// 初期化処理
 setupAssistBox();
 setupChipInsertion();
 setupArchiveToggle(archivedToggle);
 setupTagDialog();
 
-// 「その他」ボタン（旧タグ選択ボタン）押下 → ダイアログ表示
-tagSelectButton.addEventListener('click', () => {
-  tagDialog.show();
-});
+// タグ選択ダイアログ
+tagSelectButton.addEventListener('click', () => tagDialog.show());
+document.getElementById('closeTagDialog').addEventListener('click', () => tagDialog.close());
 
-// ダイアログの「閉じる」ボタンは保存も兼ねている
-const closeTagDialogButton = document.getElementById('closeTagDialog');
-closeTagDialogButton.addEventListener('click', () => {
-  tagDialog.close();
-});
-
-// 「追加」ボタン押下 → タスク・タグ・詳細をまとめて送信
+// タスク追加
 addButton.addEventListener('click', async () => {
-  const task = document.getElementById('taskInput').value.trim();
+  const task = taskInput.value.trim();
   if (!task) return;
-
   const tags = getSelectedTags();
   const detail = getDetail();
-
   await addTask(task, tags, detail);
   tagDialog.close();
 });
 
-window.addEventListener('DOMContentLoaded', loadTasks);
+// 並び順変更
+sortSelect.addEventListener('input', () => loadTasks());
 
-const sortSelect = document.getElementById('sortSelect');
-sortSelect.addEventListener('input', () => {
-  loadTasks(); // 並び替え基準が変わったら再描画
+// GAS URL設定ダイアログ
+configOpenButton.addEventListener('click', () => {
+  configInput.value = getScriptURL() || '';
+  configDialog.show();
 });
+
+configSaveButton.addEventListener('click', () => {
+  const url = configInput.value.trim();
+  if (url) {
+    setScriptURL(url);
+    configDialog.close();
+    //allTaskData = null;
+    location.reload()
+    //loadTasks();
+  }
+});
+
+configResetButton.addEventListener('click', () => {
+  localStorage.removeItem('gasScriptURL');
+  configInput.value = '';
+  configDialog.close();
+  location.reload();
+  //loadTasks();
+});
+
+window.addEventListener('DOMContentLoaded', loadTasks);
